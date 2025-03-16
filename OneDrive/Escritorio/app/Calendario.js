@@ -4,7 +4,7 @@ import { Calendar, LocaleConfig } from "react-native-calendars";
 import { ActivitiesContext } from "./ActivitiesContext";
 import { stylesCalendar } from "./stylesCalendar";
 
-// Configurar el calendario en español
+// Configuración del calendario en español (sin cambios)
 LocaleConfig.locales["es"] = {
   monthNames: [
     "Enero",
@@ -46,7 +46,6 @@ LocaleConfig.locales["es"] = {
   dayNamesShort: ["Dom.", "Lun.", "Mar.", "Mié.", "Jue.", "Vie.", "Sáb."],
   today: "Hoy",
 };
-
 LocaleConfig.defaultLocale = "es";
 
 const CALENDAR_THEME = {
@@ -86,7 +85,10 @@ const ActivityItem = memo(({ activity, onEdit, onDelete }) => (
 
 const ActivitiesList = memo(({ activities, date, onEdit, onDelete }) => {
   const formatDate = useCallback((dateString) => {
-    const date = new Date(dateString);
+    // Separar el string YYYY-MM-DD
+    const [year, month, day] = dateString.split("-").map(Number);
+    // Crear una fecha local sin influencia de zona horaria
+    const date = new Date(year, month - 1, day); // Meses son 0-indexados
     return date.toLocaleDateString("es-MX", {
       weekday: "long",
       year: "numeric",
@@ -155,10 +157,7 @@ const Calendario = () => {
         "Eliminar Actividad",
         "¿Estás seguro de que deseas eliminar esta actividad?",
         [
-          {
-            text: "Cancelar",
-            style: "cancel",
-          },
+          { text: "Cancelar", style: "cancel" },
           {
             text: "Eliminar",
             onPress: () => {
@@ -177,9 +176,11 @@ const Calendario = () => {
   const markedDates = useMemo(() => {
     const dates = {};
     activities.forEach((activity) => {
-      const date = new Date(activity.activityDate);
-      date.setHours(12);
-      const dateString = date.toISOString().split("T")[0];
+      const activityDate = new Date(activity.activityDate);
+      const year = activityDate.getFullYear();
+      const month = String(activityDate.getMonth() + 1).padStart(2, "0");
+      const day = String(activityDate.getDate()).padStart(2, "0");
+      const dateString = `${year}-${month}-${day}`;
       dates[dateString] = {
         marked: true,
         dotColor: "#007BFF",

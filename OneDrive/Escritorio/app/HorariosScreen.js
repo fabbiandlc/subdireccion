@@ -14,8 +14,8 @@ import {
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { Picker } from "@react-native-picker/picker";
 import { useDataContext } from "./DataContext";
-import { fetchAll, update } from "./Database"; // Import update for direct updates
-import { v4 as uuidv4 } from "uuid"; // Use UUID for new IDs
+import { fetchAll, update } from "./Database";
+import { v4 as uuidv4 } from "uuid";
 import { stylesHorarios as styles } from "./stylesHorarios";
 
 const HorariosScreen = ({ navigation }) => {
@@ -30,11 +30,13 @@ const HorariosScreen = ({ navigation }) => {
   } = useDataContext();
 
   const [filteredDocentes, setFilteredDocentes] = useState([]);
+  const [filteredGrupos, setFilteredGrupos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [docenteModalVisible, setDocenteModalVisible] = useState(false);
-  const [selectedDocente, setSelectedDocente] = useState(null);
+  const [selectedEntity, setSelectedEntity] = useState(null); // Puede ser docente o grupo
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentView, setCurrentView] = useState("list");
+  const [currentView, setCurrentView] = useState("list"); // "list" o "schedule"
+  const [currentTab, setCurrentTab] = useState("docentes"); // "docentes" o "grupos"
   const [editingHorario, setEditingHorario] = useState(null);
 
   const [newDocente, setNewDocente] = useState({
@@ -110,16 +112,24 @@ const HorariosScreen = ({ navigation }) => {
   useEffect(() => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const filtered = docentes.filter(
-        (docente) =>
-          docente.nombre.toLowerCase().includes(query) ||
-          docente.apellido.toLowerCase().includes(query)
-      );
-      setFilteredDocentes(filtered);
+      if (currentTab === "docentes") {
+        const filtered = docentes.filter(
+          (docente) =>
+            docente.nombre.toLowerCase().includes(query) ||
+            docente.apellido.toLowerCase().includes(query)
+        );
+        setFilteredDocentes(filtered);
+      } else {
+        const filtered = grupos.filter((grupo) =>
+          grupo.nombre.toLowerCase().includes(query)
+        );
+        setFilteredGrupos(filtered);
+      }
     } else {
       setFilteredDocentes(docentes);
+      setFilteredGrupos(grupos);
     }
-  }, [searchQuery, docentes]);
+  }, [searchQuery, docentes, grupos, currentTab]);
 
   const getDocenteNombre = useCallback(
     (docenteId) => {
@@ -184,7 +194,7 @@ const HorariosScreen = ({ navigation }) => {
       return;
     }
 
-    const id = uuidv4(); // Use UUID instead of Date.now()
+    const id = uuidv4();
     const nuevoDocente = { ...newDocente, id };
     setDocentes([...docentes, nuevoDocente]);
 
@@ -229,10 +239,8 @@ const HorariosScreen = ({ navigation }) => {
         (m) => m.id === newHorario.materiaId
       );
       if (materiaSeleccionada && !materiaSeleccionada.color) {
-        // Directly update the materia in the database
         const updatedMateria = { ...materiaSeleccionada, color: newHorario.color };
         await update("Materias", updatedMateria, updatedMateria.id);
-        // Sync materias state with database
         const freshMaterias = await fetchAll("Materias");
         setMaterias(freshMaterias);
       }
@@ -244,7 +252,7 @@ const HorariosScreen = ({ navigation }) => {
           )
         );
       } else {
-        const id = uuidv4(); // Use UUID for new horarios
+        const id = uuidv4();
         setHorarios([...horarios, { ...newHorario, id }]);
       }
 
@@ -280,9 +288,6 @@ const HorariosScreen = ({ navigation }) => {
   };
 
   const handleEliminarHorario = (id) => {
-    console.log("Attempting to delete horario with ID:", id);
-    console.log("Current horarios:", horarios);
-
     Alert.alert(
       "Eliminar Horario",
       "¿Estás seguro que deseas eliminar este horario?",
@@ -294,11 +299,7 @@ const HorariosScreen = ({ navigation }) => {
             const updatedHorarios = horarios.filter(
               (h) => String(h.id) !== String(id)
             );
-            console.log("Updated horarios:", updatedHorarios);
             setHorarios(updatedHorarios);
-            if (updatedHorarios.length === horarios.length) {
-              console.warn("No horario was deleted. Check ID matching.");
-            }
           },
           style: "destructive",
         },
@@ -306,20 +307,22 @@ const HorariosScreen = ({ navigation }) => {
     );
   };
 
-  const handleSeleccionarDocente = (docente) => {
-    setSelectedDocente(docente);
+  const handleSeleccionarEntidad = (entity) => {
+    setSelectedEntity(entity);
     setCurrentView("schedule");
   };
 
-  const horariosDocente = useMemo(() => {
-    if (!selectedDocente) return [];
-    return horarios.filter((h) => h.docenteId === selectedDocente.id);
-  }, [selectedDocente, horarios]);
+  const horariosEntidad = useMemo(() => {
+    if (!selectedEntity) return [];
+    return currentTab === "docentes"
+      ? horarios.filter((h) => h.docenteId === selectedEntity.id)
+      : horarios.filter((h) => h.salonId === selectedEntity.id);
+  }, [selectedEntity, horarios, currentTab]);
 
   const renderDocenteItem = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => handleSeleccionarDocente(item)}
+      onPress={() => handleSeleccionarEntidad(item)}
     >
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>
@@ -333,7 +336,31 @@ const HorariosScreen = ({ navigation }) => {
       <View style={styles.cardActions}>
         <TouchableOpacity
           style={styles.viewButton}
-          onPress={() => handleSeleccionarDocente(item)}
+          onPress={() => handleSeleccionarEntidad(item)}
+        >
+          <Ionicons name="calendar-outline" size={18} color="#fff" />
+          <Text style={styles.buttonText}>Ver Horario</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderGrupoItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => handleSeleccionarEntidad(item)}
+    >
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardTitle}>{item.nombre}</Text>
+        <Text style={styles.cardSubtitle}>
+          {horarios.filter((h) => h.salonId === item.id).length} clases
+          programadas
+        </Text>
+      </View>
+      <View style={styles.cardActions}>
+        <TouchableOpacity
+          style={styles.viewButton}
+          onPress={() => handleSeleccionarEntidad(item)}
         >
           <Ionicons name="calendar-outline" size={18} color="#fff" />
           <Text style={styles.buttonText}>Ver Horario</Text>
@@ -346,7 +373,7 @@ const HorariosScreen = ({ navigation }) => {
     const bloqueInicioMin = convertirHoraAMinutos(bloque.horaInicio);
     const bloqueFinMin = convertirHoraAMinutos(bloque.horaFin);
 
-    const clases = horariosDocente.filter((horario) => {
+    const clases = horariosEntidad.filter((horario) => {
       const horarioInicioMin = convertirHoraAMinutos(horario.horaInicio);
       const horarioFinMin = convertirHoraAMinutos(horario.horaFin);
 
@@ -391,7 +418,9 @@ const HorariosScreen = ({ navigation }) => {
               {getMateriaNombre(clase.materiaId)}
             </Text>
             <Text style={styles.classCellSubtitle} numberOfLines={1}>
-              {getSalonNombre(clase.salonId)}
+              {currentTab === "docentes"
+                ? getSalonNombre(clase.salonId)
+                : getDocenteNombre(clase.docenteId)}
             </Text>
             <Text style={styles.classCellTime}>
               {clase.horaInicio} - {clase.horaFin}
@@ -638,6 +667,60 @@ const HorariosScreen = ({ navigation }) => {
 
   const renderListView = () => (
     <>
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            currentTab === "docentes" && styles.activeTab,
+          ]}
+          onPress={() => {
+            setCurrentTab("docentes");
+            setSearchQuery("");
+            setCurrentView("list");
+            setSelectedEntity(null);
+          }}
+        >
+          <Ionicons
+            name="person-outline"
+            size={20}
+            color={currentTab === "docentes" ? "#007BFF" : "#666"}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              currentTab === "docentes" && styles.activeTabText,
+            ]}
+          >
+            Docentes
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            currentTab === "grupos" && styles.activeTab,
+          ]}
+          onPress={() => {
+            setCurrentTab("grupos");
+            setSearchQuery("");
+            setCurrentView("list");
+            setSelectedEntity(null);
+          }}
+        >
+          <Ionicons
+            name="people-outline"
+            size={20}
+            color={currentTab === "grupos" ? "#007BFF" : "#666"}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              currentTab === "grupos" && styles.activeTabText,
+            ]}
+          >
+            Grupos
+          </Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.searchContainer}>
         <Ionicons
           name="search-outline"
@@ -647,42 +730,52 @@ const HorariosScreen = ({ navigation }) => {
         />
         <TextInput
           style={styles.searchInput}
-          placeholder="Buscar docente..."
+          placeholder={`Buscar ${currentTab === "docentes" ? "docente" : "grupo"}...`}
           value={searchQuery}
           onChangeText={setSearchQuery}
           clearButtonMode="while-editing"
         />
       </View>
       <FlatList
-        data={filteredDocentes}
-        renderItem={renderDocenteItem}
+        data={currentTab === "docentes" ? filteredDocentes : filteredGrupos}
+        renderItem={currentTab === "docentes" ? renderDocenteItem : renderGrupoItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="person-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No hay docentes</Text>
+            <Ionicons
+              name={currentTab === "docentes" ? "person-outline" : "people-outline"}
+              size={64}
+              color="#ccc"
+            />
+            <Text style={styles.emptyText}>
+              No hay {currentTab === "docentes" ? "docentes" : "grupos"}
+            </Text>
             <Text style={styles.emptySubText}>
               {searchQuery
                 ? "Intenta con otra búsqueda"
-                : "Agrega docentes usando el botón + de abajo"}
+                : currentTab === "docentes"
+                ? "Agrega docentes usando el botón + de abajo"
+                : "No hay grupos disponibles"}
             </Text>
           </View>
         }
       />
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => {
-          setDocenteModalVisible(true);
-        }}
-      >
-        <Ionicons name="add" size={24} color="#fff" />
-      </TouchableOpacity>
+      {currentTab === "docentes" && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => {
+            setDocenteModalVisible(true);
+          }}
+        >
+          <Ionicons name="add" size={24} color="#fff" />
+        </TouchableOpacity>
+      )}
     </>
   );
 
   const renderScheduleView = () => {
-    if (!selectedDocente) return null;
+    if (!selectedEntity) return null;
 
     return (
       <View style={styles.scheduleContainer}>
@@ -691,20 +784,20 @@ const HorariosScreen = ({ navigation }) => {
             style={styles.backButton}
             onPress={() => {
               setCurrentView("list");
-              setSelectedDocente(null);
+              setSelectedEntity(null);
             }}
           >
             <Ionicons name="arrow-back" size={24} color="#007BFF" />
           </TouchableOpacity>
           <Text style={styles.scheduleTitle}>
-            Horario: {selectedDocente.nombre} {selectedDocente.apellido}
+            Horario: {currentTab === "docentes" ? `${selectedEntity.nombre} ${selectedEntity.apellido}` : selectedEntity.nombre}
           </Text>
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => {
               setNewHorario({
                 ...newHorario,
-                docenteId: selectedDocente.id,
+                [currentTab === "docentes" ? "docenteId" : "salonId"]: selectedEntity.id,
               });
               setEditingHorario(null);
               setModalVisible(true);
@@ -746,11 +839,11 @@ const HorariosScreen = ({ navigation }) => {
             </View>
           </ScrollView>
         </ScrollView>
-        {horariosDocente.length > 0 && (
+        {horariosEntidad.length > 0 && (
           <ScrollView style={styles.legendScrollContainer}>
             <View style={styles.legendContainer}>
               <Text style={styles.legendTitle}>Clases Programadas:</Text>
-              {horariosDocente.map((horario) => (
+              {horariosEntidad.map((horario) => (
                 <View key={horario.id} style={styles.legendItem}>
                   <View
                     style={[
@@ -764,7 +857,9 @@ const HorariosScreen = ({ navigation }) => {
                   <View style={styles.legendInfo}>
                     <Text style={styles.legendText}>
                       {getMateriaNombre(horario.materiaId)} -{" "}
-                      {getSalonNombre(horario.salonId)}
+                      {currentTab === "docentes"
+                        ? getSalonNombre(horario.salonId)
+                        : getDocenteNombre(horario.docenteId)}
                     </Text>
                     <Text style={styles.legendSubtext}>
                       {horario.dia}, {horario.horaInicio} - {horario.horaFin}

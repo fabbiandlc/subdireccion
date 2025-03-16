@@ -13,7 +13,6 @@ function ActivitiesProvider({ children }) {
   const [activities, setActivities] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
 
-  // Cargar actividades desde AsyncStorage al iniciar
   useEffect(() => {
     const loadActivities = async () => {
       try {
@@ -31,7 +30,6 @@ function ActivitiesProvider({ children }) {
     loadActivities();
   }, []);
 
-  // Guardar actividades en AsyncStorage
   const saveActivities = useCallback(async (updatedActivities) => {
     try {
       await AsyncStorage.setItem(
@@ -45,7 +43,6 @@ function ActivitiesProvider({ children }) {
 
   const handleSetActivities = useCallback(
     (newActivities) => {
-      // Si es una función, ejecutarla con el estado actual
       if (typeof newActivities === "function") {
         setActivities((currentActivities) => {
           const updatedActivities = newActivities(currentActivities);
@@ -53,7 +50,6 @@ function ActivitiesProvider({ children }) {
           return updatedActivities;
         });
       } else if (Array.isArray(newActivities)) {
-        // Si es un array, actualizar directamente
         setActivities(newActivities);
         saveActivities(newActivities);
       }
@@ -65,10 +61,13 @@ function ActivitiesProvider({ children }) {
     if (!selectedDate) return [];
 
     return activities.filter((activity) => {
+      // Normalizar la fecha a YYYY-MM-DD sin influencia de zona horaria
       const activityDate = new Date(activity.activityDate);
-      activityDate.setHours(12);
-      const dateString = activityDate.toISOString().split("T")[0];
-      return dateString === selectedDate;
+      const year = activityDate.getFullYear();
+      const month = String(activityDate.getMonth() + 1).padStart(2, "0"); // Meses son 0-indexados
+      const day = String(activityDate.getDate()).padStart(2, "0");
+      const normalizedDate = `${year}-${month}-${day}`;
+      return normalizedDate === selectedDate;
     });
   }, [activities, selectedDate]);
 

@@ -527,23 +527,37 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: "row",
+    justifyContent: "space-around", // Cambiado de flexDirection: "row"
     backgroundColor: "#fff",
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingVertical: 10, // Reemplaza paddingTop y paddingBottom
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: "#e0e0e0", // Color más suave
+    shadowColor: "#000", // Añadido sombra
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   tab: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 3,
-    borderBottomColor: "transparent",
+    paddingVertical: 8, // Ajustado desde 12
+    paddingHorizontal: 16, // Añadido padding horizontal
+    borderRadius: 20, // Bordes redondeados
+    // Se elimina borderBottomWidth y borderBottomColor
   },
   activeTab: {
-    borderBottomColor: "#007BFF",
+    backgroundColor: "#E3F2FD", // Color azul claro en lugar de borderBottomColor
+  },
+  tabText: {
+    fontSize: 16, // Aumentado desde 14
+    fontWeight: "500",
+    color: "#666",
+    marginLeft: 6, // Aumentado desde 4
+  },
+  activeTabText: {
+    color: "#007BFF",
+    fontWeight: "600", // Aumentado desde "500"
   },
   tabText: {
     fontSize: 14,
