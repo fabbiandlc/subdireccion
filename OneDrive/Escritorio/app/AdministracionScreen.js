@@ -67,10 +67,7 @@ const AdministracionScreen = ({ navigation }) => {
           case "materias":
             return item.nombre.toLowerCase().includes(query);
           case "grupos":
-            return (
-              item.nombre.toLowerCase().includes(query) ||
-              item.grado.toString().includes(query)
-            );
+            return item.nombre.toLowerCase().includes(query);
           default:
             return false;
         }
@@ -169,24 +166,20 @@ const AdministracionScreen = ({ navigation }) => {
         <Text style={styles.cardTitle}>
           {item.nombre} {item.apellido}
         </Text>
-        <Text style={styles.cardDate}>{item.email || "N/A"}</Text>
+        <Text style={styles.cardDate}>{item.email || "Sin email registrado"}</Text>
       </View>
       <View style={styles.cardStats}>
         <View style={styles.statItem}>
           <Ionicons name="book-outline" size={16} color="#007BFF" />
           <Text style={styles.statText}>
-            {item.materias ? item.materias.length : 0} materias
+            Materias: {item.materias?.length || 0}
           </Text>
         </View>
         <View style={styles.statItem}>
           <Ionicons name="people-outline" size={16} color="#007BFF" />
           <Text style={styles.statText}>
-            {item.grupos ? item.grupos.length : 0} grupos
+            Grupos: {item.grupos?.length || 0}
           </Text>
-        </View>
-        <View style={styles.statItem}>
-          <Ionicons name="call-outline" size={16} color="#007BFF" />
-          <Text style={styles.statText}>{item.telefono || "N/A"}</Text>
         </View>
       </View>
       <View style={styles.cardActions}>
@@ -212,21 +205,6 @@ const AdministracionScreen = ({ navigation }) => {
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>{item.nombre}</Text>
-        <Text style={styles.cardDate}>Código: {item.codigo}</Text>
-      </View>
-      <View style={styles.cardStats}>
-        <View style={styles.statItem}>
-          <Ionicons name="time-outline" size={16} color="#007BFF" />
-          <Text style={styles.statText}>{item.horasSemana} hrs/semana</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Ionicons name="school-outline" size={16} color="#007BFF" />
-          <Text style={styles.statText}>{item.creditos} créditos</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Ionicons name="calendar-outline" size={16} color="#007BFF" />
-          <Text style={styles.statText}>{item.semestre || "Variable"}</Text>
-        </View>
       </View>
       <View style={styles.cardActions}>
         <TouchableOpacity
@@ -252,12 +230,6 @@ const AdministracionScreen = ({ navigation }) => {
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>{item.nombre}</Text>
         <Text style={styles.cardDate}>Turno: {item.turno}</Text>
-      </View>
-      <View style={styles.tutorContainer}>
-        <Ionicons name="person-outline" size={16} color="#007BFF" />
-        <Text style={styles.tutorText} numberOfLines={1} ellipsizeMode="tail">
-          {item.tutor ? `Tutor: ${item.tutor}` : "Sin tutor"}
-        </Text>
       </View>
       <View style={styles.cardActions}>
         <TouchableOpacity
@@ -325,15 +297,10 @@ const AdministracionScreen = ({ navigation }) => {
           { key: "fecha", label: "Creación" },
         ];
       case "materias":
-        return [
-          { key: "nombre", label: "Nombre" },
-          { key: "codigo", label: "Código" },
-          { key: "semestre", label: "Semestre" },
-        ];
+        return [{ key: "nombre", label: "Nombre" }];
       case "grupos":
         return [
           { key: "nombre", label: "Nombre" },
-          { key: "grado", label: "Grado" },
           { key: "turno", label: "Turno" },
         ];
       default:
@@ -527,12 +494,12 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: "row",
-    justifyContent: "space-around", // Cambiado de flexDirection: "row"
+    justifyContent: "space-around",
     backgroundColor: "#fff",
-    paddingVertical: 10, // Reemplaza paddingTop y paddingBottom
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0", // Color más suave
-    shadowColor: "#000", // Añadido sombra
+    borderBottomColor: "#e0e0e0",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -541,32 +508,22 @@ const styles = StyleSheet.create({
   tab: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8, // Ajustado desde 12
-    paddingHorizontal: 16, // Añadido padding horizontal
-    borderRadius: 20, // Bordes redondeados
-    // Se elimina borderBottomWidth y borderBottomColor
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
   },
   activeTab: {
-    backgroundColor: "#E3F2FD", // Color azul claro en lugar de borderBottomColor
+    backgroundColor: "#E3F2FD",
   },
   tabText: {
-    fontSize: 16, // Aumentado desde 14
+    fontSize: 16,
     fontWeight: "500",
     color: "#666",
-    marginLeft: 6, // Aumentado desde 4
+    marginLeft: 6,
   },
   activeTabText: {
     color: "#007BFF",
-    fontWeight: "600", // Aumentado desde "500"
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginLeft: 4,
-    color: "#666",
-  },
-  activeTabText: {
-    color: "#007BFF",
+    fontWeight: "600",
   },
   searchContainer: {
     flexDirection: "row",
@@ -674,22 +631,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginLeft: 4,
-  },
-  tutorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    marginBottom: 10,
-  },
-  tutorText: {
-    fontSize: 14,
-    color: "#666",
-    marginLeft: 4,
-    flex: 1,
-    numberOfLines: 1,
-    ellipsizeMode: "tail",
   },
   cardActions: {
     flexDirection: "row",

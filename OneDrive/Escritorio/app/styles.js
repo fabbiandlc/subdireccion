@@ -390,4 +390,28 @@ export const styles = StyleSheet.create({
     color: "#007BFF", // Color azul para la hora
     marginLeft: 16,
   },
+  noteContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 5,
+  },
+  noteInput: {
+    flex: 1,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 5,
+  },
+  checkboxText: {
+    fontSize: 20,
+    marginHorizontal: 10,
+  },
+  completed: {
+    color: "green",
+  },
+  removeButtonText: {
+    fontSize: 24,
+    color: "red",
+    marginLeft: 10,
+  }
 });

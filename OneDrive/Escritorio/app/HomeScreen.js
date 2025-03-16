@@ -1,7 +1,7 @@
 import React, { useState, useContext, useCallback, memo } from "react";
 import { ScrollView, Modal, Text, TouchableOpacity, View, Alert } from "react-native";
 import { ActivitiesContext } from "./ActivitiesContext";
-import { useDataContext } from "./DataContext"; // Importar DataContext
+import { useDataContext } from "./DataContext";
 import ActivityForm from "./ActivityForm";
 import { styles } from "./styles";
 
@@ -11,57 +11,26 @@ const ActionButton = memo(({ onPress, style, children }) => (
   </TouchableOpacity>
 ));
 
-const ActivitySummary = ({ activity, onClose, onUpdateActivity }) => {
-  const [localActivity, setLocalActivity] = useState(activity);
-
-  const toggleNoteCompletion = (noteId) => {
-    const updatedNotes = localActivity.notes.map((note) =>
-      note.id === noteId ? { ...note, completed: !note.completed } : note
-    );
-    const updatedActivity = { ...localActivity, notes: updatedNotes };
-    setLocalActivity(updatedActivity);
-    onUpdateActivity(updatedActivity);
-  };
-
-  const textNotes = localActivity.notes.filter((note) => note.type === "text");
-  const checklistNotes = localActivity.notes.filter((note) => note.type === "checklist");
-
+const ActivitySummary = ({ activity, onClose }) => {
   return (
     <View style={styles.modalContainer}>
       <View style={styles.modalContent}>
-        <Text style={styles.summaryTitle}>{localActivity.activityName}</Text>
+        <Text style={styles.summaryTitle}>{activity.activityName}</Text>
         <View style={styles.summaryDateTimeContainer}>
           <Text style={styles.summaryLabel}>Fecha y Hora</Text>
           <Text style={styles.summaryDateTime}>
-            {new Date(localActivity.activityDate).toLocaleDateString()} -{" "}
-            {new Date(localActivity.activityTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            {new Date(activity.activityDate).toLocaleDateString()} -{" "}
+            {new Date(activity.activityTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </Text>
         </View>
         <ScrollView style={styles.summaryScrollView} showsVerticalScrollIndicator={false}>
-          {textNotes.length > 0 && (
+          {activity.notes && activity.notes.length > 0 && (
             <View style={styles.summarySection}>
               <Text style={styles.summaryLabel}>Notas</Text>
-              {textNotes.map((note) => (
+              {activity.notes.map((note) => (
                 <View key={note.id} style={styles.summaryNoteContainer}>
                   <Text style={styles.summaryNoteText}>{note.content}</Text>
                 </View>
-              ))}
-            </View>
-          )}
-          {checklistNotes.length > 0 && (
-            <View style={styles.summarySection}>
-              <Text style={styles.summaryLabel}>Lista de Tareas</Text>
-              {checklistNotes.map((note) => (
-                <TouchableOpacity
-                  key={note.id}
-                  style={styles.summaryChecklistItem}
-                  onPress={() => toggleNoteCompletion(note.id)}
-                >
-                  <Text style={styles.checkboxIndicator}>{note.completed ? "✓" : "○"}</Text>
-                  <Text style={[styles.summaryChecklistText, note.completed && styles.completedText]}>
-                    {note.content}
-                  </Text>
-                </TouchableOpacity>
               ))}
             </View>
           )}
@@ -75,8 +44,8 @@ const ActivitySummary = ({ activity, onClose, onUpdateActivity }) => {
 };
 
 const ActivityCard = memo(({ activity, onEdit, onDelete, onViewSummary, index }) => {
-  const listItems = Array.isArray(activity.listItems)
-    ? activity.listItems.filter((item) => item.text.trim() !== "")
+  const listItems = Array.isArray(activity.notes)
+    ? activity.notes.filter((note) => note.content.trim() !== "")
     : [];
   return (
     <View style={styles.card}>
@@ -88,7 +57,7 @@ const ActivityCard = memo(({ activity, onEdit, onDelete, onViewSummary, index })
         Hora: {new Date(activity.activityTime).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
       </Text>
       {listItems.length > 0 && (
-        <Text style={styles.cardText}>Items en la lista: {listItems.length}</Text>
+        <Text style={styles.cardText}>Notas: {listItems.length}</Text>
       )}
       <View style={styles.cardButtons}>
         <ActionButton style={styles.viewButton} onPress={() => onViewSummary(index)}>Resumen</ActionButton>
@@ -101,11 +70,10 @@ const ActivityCard = memo(({ activity, onEdit, onDelete, onViewSummary, index })
 
 const HomeScreen = () => {
   const { activities, setActivities } = useContext(ActivitiesContext);
-  const { deleteItem } = useDataContext(); // Usar deleteItem del DataContext
+  const { deleteItem } = useDataContext();
   const [modalVisible, setModalVisible] = useState(false);
   const [summaryModalVisible, setSummaryModalVisible] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
-  const [selectedIndex, setSelectedIndex] = useState(null);
   const [editIndex, setEditIndex] = useState(null);
 
   const handleEdit = useCallback((index) => {
@@ -124,12 +92,11 @@ const HomeScreen = () => {
           onPress: async () => {
             try {
               const activityId = activities[index].id;
-              await deleteItem("Activities", activityId); // Eliminar de la DB
+              await deleteItem("Activities", activityId);
               
-              // Actualizar el estado local
               setActivities((prev) => {
                 const newActivities = [...prev];
-                newActivities.splice(index, 1); // Remueve el elemento en el índice
+                newActivities.splice(index, 1);
                 return newActivities;
               });
             } catch (error) {
@@ -140,21 +107,12 @@ const HomeScreen = () => {
         },
       ]
     );
-  }, [activities, deleteItem, setActivities]); // Añadimos setActivities a las dependencias
+  }, [activities, deleteItem, setActivities]);
 
   const handleViewSummary = useCallback((index) => {
     setSelectedActivity({ ...activities[index] });
-    setSelectedIndex(index);
     setSummaryModalVisible(true);
   }, [activities]);
-
-  const handleUpdateActivity = useCallback((updatedActivity) => {
-    setActivities((prev) => {
-      const newActivities = [...prev];
-      newActivities[selectedIndex] = updatedActivity;
-      return newActivities;
-    });
-  }, [selectedIndex, setActivities]);
 
   const handleModalClose = useCallback(() => {
     setModalVisible(false);
@@ -191,7 +149,6 @@ const HomeScreen = () => {
           <ActivitySummary
             activity={selectedActivity}
             onClose={() => setSummaryModalVisible(false)}
-            onUpdateActivity={handleUpdateActivity}
           />
         )}
       </Modal>

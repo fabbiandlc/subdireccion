@@ -21,11 +21,9 @@ const MateriaForm = ({
   const [formData, setFormData] = useState({
     id: Date.now(),
     nombre: "",
-    codigo: "",
     horasSemana: "",
     creditos: "",
     semestre: "",
-    descripcion: "",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
@@ -43,8 +41,8 @@ const MateriaForm = ({
   // Manejar el guardado del formulario
   const handleSave = () => {
     // Validación básica
-    if (!formData.nombre.trim() || !formData.codigo.trim()) {
-      alert("Por favor completa los campos obligatorios: Nombre y Código");
+    if (!formData.nombre.trim()) {
+      alert("Por favor completa el campo obligatorio: Nombre");
       return;
     }
 
@@ -96,30 +94,8 @@ const MateriaForm = ({
             placeholder="Ingresa el nombre de la materia"
           />
 
-          <Text style={styles.label}>Código *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.codigo}
-            onChangeText={(text) => setFormData({ ...formData, codigo: text })}
-            placeholder="Ej. MAT101"
-            autoCapitalize="characters"
-          />
-
-          <Text style={styles.label}>Descripción</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={formData.descripcion}
-            onChangeText={(text) =>
-              setFormData({ ...formData, descripcion: text })
-            }
-            placeholder="Ingresa una descripción de la materia"
-            multiline={true}
-            numberOfLines={4}
-            textAlignVertical="top"
-          />
-
           <View style={styles.formFooter}>
-            <Text style={styles.requiredText}>* Campos obligatorios</Text>
+            <Text style={styles.requiredText}>* Campo obligatorio</Text>
           </View>
         </ScrollView>
 
@@ -195,9 +171,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontSize: 16,
     backgroundColor: "#f9f9f9",
-  },
-  textArea: {
-    minHeight: 100,
   },
   formFooter: {
     marginTop: 10,

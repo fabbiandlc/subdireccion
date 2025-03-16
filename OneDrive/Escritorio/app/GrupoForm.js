@@ -27,7 +27,6 @@ const GrupoForm = ({
     id: null,
     nombre: "",
     turno: "Matutino",
-    tutor: "",
     materias: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -45,7 +44,6 @@ const GrupoForm = ({
         id: uuidv4(), // Unique ID for new groups
         nombre: "",
         turno: "Matutino",
-        tutor: "",
         materias: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -146,14 +144,6 @@ const GrupoForm = ({
               <Text style={styles.switchLabel}>Vespertino</Text>
             </View>
           </View>
-
-          <Text style={styles.label}>Tutor</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.tutor}
-            onChangeText={(text) => setFormData({ ...formData, tutor: text })}
-            placeholder="Nombre del tutor (opcional)"
-          />
 
           <View style={styles.formFooter}>
             <Text style={styles.requiredText}>* Campo obligatorio</Text>

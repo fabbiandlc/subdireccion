@@ -25,8 +25,6 @@ const DocenteForm = ({
     nombre: "",
     apellido: "",
     email: "",
-    telefono: "",
-    especialidad: "",
     materias: [],
     grupos: [],
     createdAt: new Date().toISOString(),
@@ -46,8 +44,6 @@ const DocenteForm = ({
         nombre: "",
         apellido: "",
         email: "",
-        telefono: "",
-        especialidad: "",
         materias: [],
         grupos: [],
         createdAt: new Date().toISOString(),
@@ -87,8 +83,6 @@ const DocenteForm = ({
         nombre: "",
         apellido: "",
         email: "",
-        telefono: "",
-        especialidad: "",
         materias: [],
         grupos: [],
         createdAt: new Date().toISOString(),
@@ -147,27 +141,6 @@ const DocenteForm = ({
             placeholder="ejemplo@institucion.edu"
             keyboardType="email-address"
             autoCapitalize="none"
-          />
-
-          <Text style={styles.label}>Teléfono</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.telefono}
-            onChangeText={(text) =>
-              setFormData({ ...formData, telefono: text })
-            }
-            placeholder="Ingresa el teléfono"
-            keyboardType="phone-pad"
-          />
-
-          <Text style={styles.label}>Especialidad</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.especialidad}
-            onChangeText={(text) =>
-              setFormData({ ...formData, especialidad: text })
-            }
-            placeholder="Ingresa la especialidad del docente"
           />
 
           <View style={styles.formFooter}>

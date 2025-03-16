@@ -19,29 +19,22 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
   const [activityTime, setActivityTime] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [notes, setNotes] = useState([]); // Estado para notas (inicialmente vacío)
+  const [notes, setNotes] = useState([]);
   const scrollViewRef = useRef(null);
 
-  // Cargar datos existentes al editar
   useEffect(() => {
     if (editIndex !== null && activities[editIndex]) {
       const activity = activities[editIndex];
       setActivityName(activity.activityName || "");
       setActivityDate(new Date(activity.activityDate));
       setActivityTime(new Date(activity.activityTime));
-      setNotes(activity.notes || []); // Inicializa con las notas existentes o un array vacío
+      setNotes(activity.notes || []);
+    } else if (notes.length === 0) {
+      setNotes([{ id: Date.now(), content: "" }]);
     }
   }, [editIndex, activities]);
 
-  // Agregar una nueva nota o elemento de lista
-  const addNote = (type) => {
-    const newNote = { id: Date.now(), content: "", type };
-    setNotes((prevNotes) => [...prevNotes, newNote]);
-    scrollToBottom();
-  };
-
-  // Crear una nueva nota o elemento de lista al presionar Enter
-  const handleNoteSubmit = (id, type) => {
+  const handleNoteSubmit = (id) => {
     setNotes((prevNotes) => {
       const currentIndex = prevNotes.findIndex((note) => note.id === id);
       if (currentIndex !== -1) {
@@ -49,7 +42,6 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
         updatedNotes.splice(currentIndex + 1, 0, {
           id: Date.now(),
           content: "",
-          type,
         });
         return updatedNotes;
       }
@@ -58,21 +50,12 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
     scrollToBottom();
   };
 
-  // Actualizar el contenido o estado de una nota
-  const updateNote = (id, content, completed = false) => {
+  const updateNote = (id, content) => {
     setNotes((prevNotes) =>
-      prevNotes.map((note) =>
-        note.id === id ? { ...note, content, completed } : note
-      )
+      prevNotes.map((note) => (note.id === id ? { ...note, content } : note))
     );
   };
 
-  // Eliminar una nota
-  const removeNote = (id) => {
-    setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
-  };
-
-  // Desplazar el ScrollView hacia abajo
   const scrollToBottom = () => {
     setTimeout(() => {
       if (scrollViewRef.current) {
@@ -103,12 +86,10 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
     };
 
     if (editIndex !== null) {
-      // Modo edición
       const updatedActivities = [...activities];
       updatedActivities[editIndex] = newActivity;
       setActivities(updatedActivities);
     } else {
-      // Modo creación
       setActivities([...activities, newActivity]);
     }
 
@@ -116,56 +97,18 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
     setEditIndex(null);
   };
 
-  // Renderizar una nota o elemento de lista
-  const renderNoteItem = (note) => {
-    switch (note.type) {
-      case "text":
-        return (
-          <View key={note.id} style={styles.noteContainer}>
-            <TextInput
-              style={styles.noteInput}
-              multiline
-              placeholder="Agregar nota..."
-              value={note.content}
-              onChangeText={(content) => updateNote(note.id, content)}
-              onSubmitEditing={() => handleNoteSubmit(note.id, "text")}
-            />
-            <TouchableOpacity onPress={() => removeNote(note.id)}>
-              <Text style={styles.removeButtonText}>×</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      case "checklist":
-        return (
-          <View key={note.id} style={styles.checklistContainer}>
-            <TextInput
-              style={styles.checklistInput}
-              placeholder="Agregar elemento de lista..."
-              value={note.content}
-              onChangeText={(content) => updateNote(note.id, content)}
-              onSubmitEditing={() => handleNoteSubmit(note.id, "checklist")}
-            />
-            <TouchableOpacity
-              onPress={() => updateNote(note.id, note.content, !note.completed)}
-            >
-              <Text
-                style={[
-                  styles.checkboxText,
-                  note.completed && styles.completed,
-                ]}
-              >
-                {note.completed ? "✓" : "○"}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => removeNote(note.id)}>
-              <Text style={styles.removeButtonText}>×</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      default:
-        return null;
-    }
-  };
+  const renderNoteItem = (note) => (
+    <View key={note.id} style={styles.noteContainer}>
+      <TextInput
+        style={styles.noteInput}
+        multiline
+        placeholder="Agregar nota..."
+        value={note.content}
+        onChangeText={(content) => updateNote(note.id, content)}
+        onSubmitEditing={() => handleNoteSubmit(note.id)}
+      />
+    </View>
+  );
 
   return (
     <KeyboardAvoidingView
@@ -179,15 +122,12 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
           style={{ maxHeight: 400 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Campo de nombre de la actividad */}
           <TextInput
             style={styles.input}
             placeholder="Nombre de la actividad"
             value={activityName}
             onChangeText={setActivityName}
           />
-
-          {/* Selector de fecha */}
           <TouchableOpacity
             onPress={() => setShowDatePicker(true)}
             style={styles.input}
@@ -205,8 +145,6 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
               }}
             />
           )}
-
-          {/* Selector de hora */}
           <TouchableOpacity
             onPress={() => setShowTimePicker(true)}
             style={styles.input}
@@ -229,29 +167,11 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
               }}
             />
           )}
-
-          {/* Sección de notas y lista de tareas */}
           <View style={styles.notesSection}>
-            <Text style={styles.sectionTitle}>Notas y Lista de Tareas</Text>
-            <View style={styles.addButtonsContainer}>
-              <TouchableOpacity
-                style={[styles.addButton, styles.textButton]}
-                onPress={() => addNote("text")}
-              >
-                <Text style={styles.addButtonText}>+ Nota</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.addButton, styles.checklistButton]}
-                onPress={() => addNote("checklist")}
-              >
-                <Text style={styles.addButtonText}>+ Lista</Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.sectionTitle}>Notas</Text>
             {notes.map((note) => renderNoteItem(note))}
           </View>
         </ScrollView>
-
-        {/* Botones Guardar y Cancelar */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <Text style={styles.buttonText}>Guardar</Text>
