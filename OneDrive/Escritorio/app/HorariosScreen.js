@@ -73,8 +73,8 @@ const HorariosScreen = ({ navigation }) => {
       { horaInicio: "07:00", horaFin: "07:50", esReceso: false },
       { horaInicio: "07:50", horaFin: "08:40", esReceso: false },
       { horaInicio: "08:40", horaFin: "09:30", esReceso: false },
-      { horaInicio: "09:30", horaFin: "10:20", esReceso: false },
-      { horaInicio: "10:20", horaFin: "10:50", esReceso: true },
+      { horaInicio: "09:30", horaFin: "10:00", esReceso: true }, // Receso ajustado
+      { horaInicio: "10:00", horaFin: "10:50", esReceso: false },
       { horaInicio: "10:50", horaFin: "11:40", esReceso: false },
       { horaInicio: "11:40", horaFin: "12:30", esReceso: false },
       { horaInicio: "12:30", horaFin: "13:20", esReceso: false },

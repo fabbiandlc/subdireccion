@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,32 +11,56 @@ import {
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import HomeScreen from "./HomeScreen";
 import Calendario from "./Calendario";
 import AdministracionScreen from "./AdministracionScreen";
 import HorariosScreen from "./HorariosScreen";
+import LoginScreen from "./LoginScreen";
 import BackupScreen from "./BackupScreen";
 import { ActivitiesProvider } from "./ActivitiesContext";
 import { DataProvider } from "./DataContext";
 import "react-native-get-random-values";
-import { v4 as uuidv4 } from "uuid";
 
 const { width } = Dimensions.get("window");
 
 export default function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [currentScreen, setCurrentScreen] = useState("Actividades");
+  const [currentScreen, setCurrentScreen] = useState("Login");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const translateX = useRef(new Animated.Value(-width * 0.8)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  React.useEffect(() => {
-    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (isDrawerOpen) {
-        closeDrawer();
-        return true;
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      try {
+        const token = await AsyncStorage.getItem("userToken");
+        if (token) {
+          setIsLoggedIn(true);
+          setCurrentScreen("Actividades");
+          closeDrawer(); // Cierra el drawer completamente al cargar con token
+        }
+      } catch (error) {
+        console.error("Error checking token:", error);
+      } finally {
+        setIsLoading(false);
       }
-      return false;
-    });
+    };
+    checkLoginStatus();
+  }, []);
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (isDrawerOpen) {
+          closeDrawer();
+          return true;
+        }
+        return false;
+      }
+    );
 
     return () => backHandler.remove();
   }, [isDrawerOpen]);
@@ -79,10 +103,35 @@ export default function App() {
     closeDrawer();
   };
 
+  const handleLoginSuccess = () => {
+    setIsLoggedIn(true);
+    setCurrentScreen("Actividades");
+    closeDrawer(); // Cierra el drawer completamente al iniciar sesión
+  };
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem("userToken");
+    setIsLoggedIn(false);
+    setCurrentScreen("Login");
+    closeDrawer();
+  };
+
   const renderMainContent = () => {
     const navigation = {
       goBack: () => setCurrentScreen("Actividades"),
     };
+
+    if (isLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <Text>Cargando...</Text>
+        </View>
+      );
+    }
+
+    if (!isLoggedIn) {
+      return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+    }
 
     return (
       <SafeAreaView style={styles.safeAreaContent}>
@@ -95,9 +144,13 @@ export default function App() {
         </View>
         {currentScreen === "Actividades" && <HomeScreen />}
         {currentScreen === "Calendario" && <Calendario />}
-        {currentScreen === "Gestión" && <AdministracionScreen navigation={navigation} />}
+        {currentScreen === "Gestión" && (
+          <AdministracionScreen navigation={navigation} />
+        )}
         {currentScreen === "Horarios" && <HorariosScreen />}
-        {currentScreen === "Respaldo" && <BackupScreen navigation={navigation} />}
+        {currentScreen === "Respaldo" && (
+          <BackupScreen navigation={navigation} />
+        )}
       </SafeAreaView>
     );
   };
@@ -108,13 +161,14 @@ export default function App() {
     { name: "Gestión", icon: "pencil-outline" },
     { name: "Horarios", icon: "time-outline" },
     { name: "Respaldo", icon: "save-outline" },
+    { name: "Cerrar Sesión", icon: "log-out-outline", action: handleLogout },
   ];
 
   return (
     <DataProvider>
       <SafeAreaProvider>
         <ActivitiesProvider>
-          {isDrawerOpen && (
+          {isDrawerOpen && isLoggedIn && (
             <TouchableOpacity
               activeOpacity={1}
               style={styles.overlayContainer}
@@ -129,28 +183,36 @@ export default function App() {
             </TouchableOpacity>
           )}
 
-          <Animated.View style={[styles.drawer, { transform: [{ translateX }] }]}>
-            <SafeAreaView style={styles.safeAreaDrawer}>
-              <View style={styles.drawerHeader}>
-                <Text style={styles.drawerTitle}>Mi Aplicación</Text>
-                <TouchableOpacity onPress={closeDrawer}>
-                  <Ionicons name="close" size={24} color="#000" />
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={styles.drawerContent}>
-                {drawerItems.map((item, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.drawerItem}
-                    onPress={() => navigateToScreen(item.name)}
-                  >
-                    <Ionicons name={item.icon} size={24} color="#007BFF" />
-                    <Text style={styles.drawerItemText}>{item.name}</Text>
+          {isLoggedIn && (
+            <Animated.View
+              style={[styles.drawer, { transform: [{ translateX }] }]}
+            >
+              <SafeAreaView style={styles.safeAreaDrawer}>
+                <View style={styles.drawerHeader}>
+                  <Text style={styles.drawerTitle}>Mi Aplicación</Text>
+                  <TouchableOpacity onPress={closeDrawer}>
+                    <Ionicons name="close" size={24} color="#000" />
                   </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </SafeAreaView>
-          </Animated.View>
+                </View>
+                <ScrollView style={styles.drawerContent}>
+                  {drawerItems.map((item, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.drawerItem}
+                      onPress={() =>
+                        item.action
+                          ? item.action()
+                          : navigateToScreen(item.name)
+                      }
+                    >
+                      <Ionicons name={item.icon} size={24} color="#007BFF" />
+                      <Text style={styles.drawerItemText}>{item.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </SafeAreaView>
+            </Animated.View>
+          )}
 
           <View style={styles.mainContent}>{renderMainContent()}</View>
         </ActivitiesProvider>
@@ -234,5 +296,10 @@ const styles = StyleSheet.create({
   drawerItemText: {
     marginLeft: 32,
     fontSize: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
