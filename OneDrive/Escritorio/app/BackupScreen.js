@@ -1,29 +1,20 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, TouchableOpacity, Text, Alert, StyleSheet, ActivityIndicator } from 'react-native';
-import * as FileSystem from 'expo-file-system';
-import * as DocumentPicker from 'expo-document-picker';
-import * as Sharing from 'expo-sharing';
-import { exportBackup, importBackup, fetchAll, initDatabase } from './Database';
-import { useDataContext } from './DataContext';
+import React, { useCallback, useState } from "react";
+import { View, TouchableOpacity, Text, Alert, StyleSheet } from "react-native";
+import * as FileSystem from "expo-file-system";
+import * as DocumentPicker from "expo-document-picker";
+import * as Sharing from "expo-sharing";
+import { exportBackup, importBackup, fetchAll } from "./Database";
+import { useDataContext } from "./DataContext";
+import { useContext } from "react";
+import { ActivitiesContext } from "./ActivitiesContext";
 
 const BackupScreen = () => {
-  const { setDocentes, setMaterias, setGrupos, setHorarios, setActivities } = useDataContext();
+  const { setDocentes, setMaterias, setGrupos, setHorarios } = useDataContext();
+  const { setActivities } = useContext(ActivitiesContext);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Inicializa la base de datos y carga datos al inicio
-  useEffect(() => {
-    const initialize = async () => {
-      await initDatabase();
-      await loadData();
-    };
-    
-    initialize();
-  }, []);
-
-  // Función para cargar datos desde la base de datos
   const loadData = useCallback(async () => {
     try {
-      // Cargamos datos de todas las tablas en paralelo
       const [docentes, materias, grupos, horarios, activities] = await Promise.all([
         fetchAll("Docentes"),
         fetchAll("Materias"),
@@ -31,44 +22,36 @@ const BackupScreen = () => {
         fetchAll("Horarios"),
         fetchAll("Activities"),
       ]);
-      
-      // Actualizamos el contexto
+      console.log("Loaded data after import:", { activities }); // Debug log
       setDocentes(docentes);
       setMaterias(materias);
       setGrupos(grupos);
       setHorarios(horarios);
       setActivities(activities);
-      
     } catch (error) {
-      // No mostramos alerta para no molestar al usuario
-      console.log("Error al cargar datos iniciales");
+      console.error("Error loading data:", error);
+      Alert.alert("Error", "Failed to load data");
     }
   }, [setDocentes, setMaterias, setGrupos, setHorarios, setActivities]);
 
   const handleExport = useCallback(async () => {
     try {
       setIsLoading(true);
-      
       const backup = await exportBackup();
       if (!backup || backup === "{}") {
-        Alert.alert("Información", "No hay datos para exportar");
-        setIsLoading(false);
+        Alert.alert("Info", "No data to export");
         return;
       }
 
-      // Guardar en archivo temporal
       const tempUri = `${FileSystem.documentDirectory}backup.json`;
       await FileSystem.writeAsStringAsync(tempUri, backup);
-      
-      // Compartir archivo
-      await Sharing.shareAsync(tempUri, { 
-        mimeType: 'application/json', 
-        dialogTitle: 'Guardar copia de seguridad' 
+      await Sharing.shareAsync(tempUri, {
+        mimeType: "application/json",
+        dialogTitle: "Save backup",
       });
-      
     } catch (error) {
-      console.log("Error en exportación");
-      Alert.alert("Error", "No se pudo exportar la copia de seguridad");
+      console.error("Export error:", error);
+      Alert.alert("Error", "Failed to export backup");
     } finally {
       setIsLoading(false);
     }
@@ -76,23 +59,29 @@ const BackupScreen = () => {
 
   const handleImport = useCallback(async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
-      if (result.type !== 'success') return;
-      
       setIsLoading(true);
-      
-      const content = await FileSystem.readAsStringAsync(result.uri);
-      const success = await importBackup(content);
-      
-      if (success) {
-        await loadData();
-        Alert.alert("Éxito", "Datos restaurados correctamente");
-      } else {
-        Alert.alert("Error", "El archivo de respaldo no es válido");
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "application/json",
+      });
+      if (result.type !== "success") {
+        Alert.alert("Error", "No file selected");
+        return;
       }
+
+      const content = await FileSystem.readAsStringAsync(result.uri);
+      console.log("Importing backup content:", content); // Debug log
+
+      const success = await importBackup(content);
+      if (!success) {
+        Alert.alert("Error", "Failed to import backup");
+        return;
+      }
+
+      await loadData();
+      Alert.alert("Success", "Backup imported successfully");
     } catch (error) {
-      console.log("Error en importación");
-      Alert.alert("Error", "No se pudo importar la copia de seguridad");
+      console.error("Import error:", error);
+      Alert.alert("Error", `Failed to import backup: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -102,24 +91,17 @@ const BackupScreen = () => {
     <View style={styles.container}>
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007BFF" />
           <Text style={styles.loadingText}>Procesando...</Text>
         </View>
       ) : (
-        <>
-          <TouchableOpacity 
-            onPress={handleExport} 
-            style={styles.button}
-          >
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.button} onPress={handleExport}>
             <Text style={styles.buttonText}>Exportar Copia de Seguridad</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={handleImport} 
-            style={styles.button}
-          >
+          <TouchableOpacity style={styles.button} onPress={handleImport}>
             <Text style={styles.buttonText}>Importar Copia de Seguridad</Text>
           </TouchableOpacity>
-        </>
+        </View>
       )}
     </View>
   );
@@ -128,31 +110,43 @@ const BackupScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20
+    backgroundColor: "#f5f5f5",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  buttonContainer: {
+    width: "100%",
+    alignItems: "center",
   },
   button: {
-    backgroundColor: '#007BFF',
-    padding: 15,
+    backgroundColor: "#007BFF",
+    paddingVertical: 15,
+    paddingHorizontal: 30,
     borderRadius: 10,
-    marginBottom: 20,
-    width: '80%',
-    alignItems: 'center'
+    marginVertical: 10,
+    width: "80%",
+    alignItems: "center",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
   loadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#666'
-  }
+    fontSize: 18,
+    color: "#666",
+    fontWeight: "500",
+  },
 });
 
 export default BackupScreen;

@@ -40,75 +40,68 @@ export const DataProvider = ({ children }) => {
     loadData();
   }, []);
 
-  const updateTable = async (table, setState, currentState, newData) => {
+  const updateTable = async (table, setState, newData) => {
     try {
-      // Fetch current database state to ensure sync
-      const dbData = await fetchAll(table);
-      const dbIds = dbData.map((item) => item.id);
-
-      // Update state first for UI responsiveness
-      setState(newData);
-
-      // Sync with database
-      const existingIds = dbIds; // Use database IDs instead of currentState
+      // Update database first
+      const currentDbData = await fetchAll(table);
+      const currentIds = currentDbData.map((item) => item.id);
       const newIds = newData.map((item) => item.id);
 
       // Insert or update items
       for (const item of newData) {
-        const existsInDb = existingIds.includes(item.id);
-        if (existsInDb) {
+        if (currentIds.includes(item.id)) {
           await update(table, item, item.id);
         } else {
           await insert(table, item);
         }
       }
 
-      // Remove items that are no longer in newData
-      const itemsToDelete = dbData.filter((item) => !newIds.includes(item.id));
+      // Remove items no longer present
+      const itemsToDelete = currentDbData.filter(
+        (item) => !newIds.includes(item.id)
+      );
       for (const item of itemsToDelete) {
         await remove(table, item.id);
       }
+
+      // Update state
+      setState(newData);
     } catch (error) {
       console.error(`Error updating ${table}:`, error);
-      setState(currentState); // Rollback on failure
-      throw error; // Ensure errors propagate
+      throw error;
     }
   };
 
-  // Specific update functions
   const updateDocentes = (newDocentes) =>
-    updateTable("Docentes", setDocentes, docentes, newDocentes);
+    updateTable("Docentes", setDocentes, newDocentes);
   const updateMaterias = (newMaterias) =>
-    updateTable("Materias", setMaterias, materias, newMaterias);
+    updateTable("Materias", setMaterias, newMaterias);
   const updateGrupos = (newGrupos) =>
-    updateTable("Grupos", setGrupos, grupos, newGrupos);
+    updateTable("Grupos", setGrupos, newGrupos);
   const updateHorarios = (newHorarios) =>
-    updateTable("Horarios", setHorarios, horarios, newHorarios);
+    updateTable("Horarios", setHorarios, newHorarios);
   const updateActivities = (newActivities) =>
-    updateTable("Activities", setActivities, activities, newActivities);
+    updateTable("Activities", setActivities, newActivities);
 
-  // Delete function
   const deleteItem = async (table, id) => {
     try {
       await remove(table, id);
       switch (table) {
         case "Docentes":
-          setDocentes(docentes.filter((d) => String(d.id) !== String(id)));
+          setDocentes(docentes.filter((d) => d.id !== id));
           break;
         case "Materias":
-          setMaterias(materias.filter((m) => String(m.id) !== String(id)));
+          setMaterias(materias.filter((m) => m.id !== id));
           break;
         case "Grupos":
-          setGrupos(grupos.filter((g) => String(g.id) !== String(id)));
+          setGrupos(grupos.filter((g) => g.id !== id));
           break;
         case "Horarios":
-          setHorarios(horarios.filter((h) => String(h.id) !== String(id)));
+          setHorarios(horarios.filter((h) => h.id !== id));
           break;
         case "Activities":
-          setActivities(activities.filter((a) => String(a.id) !== String(id)));
+          setActivities(activities.filter((a) => a.id !== id));
           break;
-        default:
-          console.warn("Unknown table:", table);
       }
     } catch (error) {
       console.error(`Error deleting from ${table}:`, error);

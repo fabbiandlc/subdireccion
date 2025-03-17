@@ -5,7 +5,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { insert, update, fetchAll, remove } from "./Database";
 
 const ActivitiesContext = createContext();
 
@@ -16,28 +16,44 @@ function ActivitiesProvider({ children }) {
   useEffect(() => {
     const loadActivities = async () => {
       try {
-        const storedActivities = await AsyncStorage.getItem("activities");
-        if (storedActivities) {
-          const parsedActivities = JSON.parse(storedActivities);
-          if (Array.isArray(parsedActivities)) {
-            setActivities(parsedActivities);
-          }
-        }
+        const dbActivities = await fetchAll("Activities");
+        console.log("Activities loaded from DB:", dbActivities);
+        setActivities(dbActivities || []);
       } catch (error) {
-        console.error("Error al cargar actividades:", error);
+        console.error("Error loading activities:", error);
       }
     };
     loadActivities();
   }, []);
 
-  const saveActivities = useCallback(async (updatedActivities) => {
+  const saveActivitiesToDb = useCallback(async (updatedActivities) => {
     try {
-      await AsyncStorage.setItem(
-        "activities",
-        JSON.stringify(updatedActivities)
+      const currentDbActivities = await fetchAll("Activities");
+      console.log("Current DB activities:", currentDbActivities);
+      const currentIds = currentDbActivities.map((a) => a.id);
+      const newIds = updatedActivities.map((a) => a.id);
+
+      for (const activity of updatedActivities) {
+        console.log("Processing activity:", activity);
+        if (currentIds.includes(activity.id)) {
+          console.log("Updating activity:", activity);
+          await update("Activities", activity, activity.id);
+        } else {
+          console.log("Inserting new activity:", activity);
+          await insert("Activities", activity);
+        }
+      }
+
+      const itemsToDelete = currentDbActivities.filter(
+        (a) => !newIds.includes(a.id)
       );
+      for (const item of itemsToDelete) {
+        console.log("Removing activity:", item);
+        await remove("Activities", item.id);
+      }
+      console.log("Activities saved to DB successfully");
     } catch (error) {
-      console.error("Error al guardar actividades:", error);
+      console.error("Error saving activities to database:", error);
     }
   }, []);
 
@@ -46,25 +62,25 @@ function ActivitiesProvider({ children }) {
       if (typeof newActivities === "function") {
         setActivities((currentActivities) => {
           const updatedActivities = newActivities(currentActivities);
-          saveActivities(updatedActivities);
+          console.log("Updated activities (function):", updatedActivities);
+          saveActivitiesToDb(updatedActivities);
           return updatedActivities;
         });
       } else if (Array.isArray(newActivities)) {
+        console.log("Setting activities directly:", newActivities);
         setActivities(newActivities);
-        saveActivities(newActivities);
+        saveActivitiesToDb(newActivities);
       }
     },
-    [saveActivities]
+    [saveActivitiesToDb]
   );
 
   const activitiesForDay = useMemo(() => {
     if (!selectedDate) return [];
-
     return activities.filter((activity) => {
-      // Normalizar la fecha a YYYY-MM-DD sin influencia de zona horaria
       const activityDate = new Date(activity.activityDate);
       const year = activityDate.getFullYear();
-      const month = String(activityDate.getMonth() + 1).padStart(2, "0"); // Meses son 0-indexados
+      const month = String(activityDate.getMonth() + 1).padStart(2, "0");
       const day = String(activityDate.getDate()).padStart(2, "0");
       const normalizedDate = `${year}-${month}-${day}`;
       return normalizedDate === selectedDate;
