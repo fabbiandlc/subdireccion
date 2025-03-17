@@ -1,36 +1,29 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
-node_modules/
-
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
+# Ignorar archivos del sistema y temporales
+.ssh/
+.vscode/
+AppData/
+.cache/
+.config/
+.node_repl_history
+.nuget/
+.ntuser.*
+*.log
+*.tmp
 .DS_Store
-*.pem
+Thumbs.db
+desktop.ini
 
-# local env files
-.env*.local
+# Ignorar IDEs y herramientas
+.idea/
+.vs/
 
-# typescript
-*.tsbuildinfo
+# Ignorar dependencias
+node_modules/
+package-lock.json
+
+# Ignorar archivos personales
+OneDrive/
+Downloads/
+Documents/
+Music/
+Favorites/
