@@ -16,12 +16,17 @@ function getUsers() {
     const data = fs.readFileSync(USERS_FILE, "utf8");
     return JSON.parse(data);
   } catch (error) {
+    console.error("Error leyendo users.json:", error);
     return [];
   }
 }
 
 function saveUsers(users) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
+  try {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
+  } catch (error) {
+    console.error("Error guardando users.json:", error);
+  }
 }
 
 function authenticateToken(req, res, next) {
@@ -42,7 +47,7 @@ function authenticateToken(req, res, next) {
 }
 
 app.post("/register", async (req, res) => {
-  const { username, password, role = "user" } = req.body; // Por defecto, nuevos usuarios son "user"
+  const { username, password, role = "user" } = req.body;
 
   if (!username || !password) {
     return res.status(400).json({ error: "Nombre de usuario y contraseña son requeridos" });
@@ -56,7 +61,7 @@ app.post("/register", async (req, res) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser = { username, password: hashedPassword, role };
+  const newUser = { username, password: hashedPassword, role: role || "user" }; // Asegura rol por defecto
   users.push(newUser);
   saveUsers(users);
 
@@ -83,14 +88,15 @@ app.post("/login", async (req, res) => {
     return res.status(401).json({ error: "Credenciales incorrectas" });
   }
 
-  // Generar token JWT con el rol
+  // Asegura que el rol siempre esté definido
+  const userRole = user.role || "user"; // Valor por defecto si role falta en el usuario
   const token = jwt.sign(
-    { username: user.username, role: user.role },
+    { username: user.username, role: userRole },
     "mi_secreto_jwt",
     { expiresIn: "1h" }
   );
 
-  res.json({ message: "Inicio de sesión exitoso", token, role: user.role });
+  res.json({ message: "Inicio de sesión exitoso", token, role: userRole });
 });
 
 app.get("/protected-route", authenticateToken, (req, res) => {
