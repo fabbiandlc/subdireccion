@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 const fs = require("fs");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000; // Usa el puerto de Render o 3000 localmente
 
 app.use(bodyParser.json());
 
@@ -61,7 +61,7 @@ app.post("/register", async (req, res) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser = { username, password: hashedPassword, role: role || "user" }; // Asegura rol por defecto
+  const newUser = { username, password: hashedPassword, role: role || "user" };
   users.push(newUser);
   saveUsers(users);
 
@@ -88,8 +88,7 @@ app.post("/login", async (req, res) => {
     return res.status(401).json({ error: "Credenciales incorrectas" });
   }
 
-  // Asegura que el rol siempre esté definido
-  const userRole = user.role || "user"; // Valor por defecto si role falta en el usuario
+  const userRole = user.role || "user"; // Valor por defecto
   const token = jwt.sign(
     { username: user.username, role: userRole },
     "mi_secreto_jwt",
@@ -104,5 +103,5 @@ app.get("/protected-route", authenticateToken, (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Servidor iniciado en http://localhost:${PORT}`);
+  console.log(`Servidor iniciado en puerto ${PORT}`);
 });
