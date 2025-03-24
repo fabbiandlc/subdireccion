@@ -7,13 +7,10 @@ const fs = require("fs");
 const app = express();
 const PORT = 3000;
 
-// Middleware para analizar JSON
 app.use(bodyParser.json());
 
-// Ruta al archivo JSON que actúa como "base de datos"
 const USERS_FILE = "./users.json";
 
-// Leer usuarios desde el archivo JSON
 function getUsers() {
   try {
     const data = fs.readFileSync(USERS_FILE, "utf8");
@@ -23,12 +20,10 @@ function getUsers() {
   }
 }
 
-// Guardar usuarios en el archivo JSON
 function saveUsers(users) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
 }
 
-// Middleware para verificar el token JWT
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -41,15 +36,13 @@ function authenticateToken(req, res, next) {
     if (err) {
       return res.status(403).json({ error: "Token inválido." });
     }
-
     req.user = user;
     next();
   });
 }
 
-// Ruta para registrar un nuevo usuario
 app.post("/register", async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, role = "user" } = req.body; // Por defecto, nuevos usuarios son "user"
 
   if (!username || !password) {
     return res.status(400).json({ error: "Nombre de usuario y contraseña son requeridos" });
@@ -62,18 +55,14 @@ app.post("/register", async (req, res) => {
     return res.status(400).json({ error: "El nombre de usuario ya está registrado" });
   }
 
-  // Cifrar la contraseña
   const hashedPassword = await bcrypt.hash(password, 10);
-
-  // Guardar el nuevo usuario
-  const newUser = { username, password: hashedPassword };
+  const newUser = { username, password: hashedPassword, role };
   users.push(newUser);
   saveUsers(users);
 
   res.status(201).json({ message: "Usuario registrado exitosamente" });
 });
 
-// Ruta para iniciar sesión
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
@@ -88,25 +77,26 @@ app.post("/login", async (req, res) => {
     return res.status(401).json({ error: "Credenciales incorrectas" });
   }
 
-  // Verificar la contraseña
   const isPasswordValid = await bcrypt.compare(password, user.password);
 
   if (!isPasswordValid) {
     return res.status(401).json({ error: "Credenciales incorrectas" });
   }
 
-  // Generar un token JWT
-  const token = jwt.sign({ username: user.username }, "mi_secreto_jwt", { expiresIn: "1h" });
+  // Generar token JWT con el rol
+  const token = jwt.sign(
+    { username: user.username, role: user.role },
+    "mi_secreto_jwt",
+    { expiresIn: "1h" }
+  );
 
-  res.json({ message: "Inicio de sesión exitoso", token });
+  res.json({ message: "Inicio de sesión exitoso", token, role: user.role });
 });
 
-// Ruta protegida de ejemplo
 app.get("/protected-route", authenticateToken, (req, res) => {
   res.json({ message: "Esta es una ruta protegida.", user: req.user });
 });
 
-// Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`Servidor iniciado en http://localhost:${PORT}`);
 });
