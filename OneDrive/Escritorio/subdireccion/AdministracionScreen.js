@@ -2,12 +2,12 @@ import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   TouchableOpacity,
   Modal,
   TextInput,
   Alert,
+  StyleSheet,
   SafeAreaView,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
@@ -16,7 +16,17 @@ import DocenteForm from "./DocenteForm";
 import MateriaForm from "./MateriaForm";
 import GrupoForm from "./GrupoForm";
 
-const AdministracionScreen = ({ navigation }) => {
+const AdministracionScreen = ({ navigation, userRole }) => {
+  if (userRole !== "admin") {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.noPermissionText}>
+          No tienes permiso para acceder a esta sección.
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
   const [activeSection, setActiveSection] = useState("docentes");
   const { docentes, setDocentes, materias, setMaterias, grupos, setGrupos } =
     useDataContext();
@@ -166,7 +176,9 @@ const AdministracionScreen = ({ navigation }) => {
         <Text style={styles.cardTitle}>
           {item.nombre} {item.apellido}
         </Text>
-        <Text style={styles.cardDate}>{item.email || "Sin email registrado"}</Text>
+        <Text style={styles.cardDate}>
+          {item.email || "Sin email registrado"}
+        </Text>
       </View>
       <View style={styles.cardStats}>
         <View style={styles.statItem}>
@@ -488,6 +500,12 @@ const AdministracionScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  noPermissionText: {
+    fontSize: 18,
+    textAlign: "center",
+    marginTop: 20,
+    color: "#666",
+  },
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",

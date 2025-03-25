@@ -38,7 +38,8 @@ const LoginScreen = ({ onLoginSuccess }) => {
 
       if (response.ok) {
         await AsyncStorage.setItem('userToken', data.token);
-        onLoginSuccess(); // Llama a la función pasada desde App.js
+        await AsyncStorage.setItem('userRole', data.role); // Store role
+        onLoginSuccess(data.role); // Pass role to App.js
       } else {
         Alert.alert('Error', data.error || 'Credenciales incorrectas');
       }
@@ -121,4 +122,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen;
+export default LoginScreen;6

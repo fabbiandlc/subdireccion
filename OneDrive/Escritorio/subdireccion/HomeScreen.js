@@ -6,12 +6,13 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  FlatList,
 } from "react-native";
 import { ActivitiesContext } from "./ActivitiesContext";
 import { useDataContext } from "./DataContext";
 import ActivityForm from "./ActivityForm";
-import { styles } from "./styles";
-import { v4 as uuidv4 } from "uuid"; // Added for unique IDs
+import { styles } from "./styles"; // Importing from your styles.js
+import { v4 as uuidv4 } from "uuid";
 
 const ActionButton = memo(({ onPress, style, children }) => (
   <TouchableOpacity style={style} onPress={onPress}>
@@ -20,39 +21,40 @@ const ActionButton = memo(({ onPress, style, children }) => (
 ));
 
 const ActivitySummary = ({ activity, onClose }) => {
+  const notes = Array.isArray(activity.notes) ? activity.notes : [];
+
   return (
-    <View style={styles.modalContainer}>
-      <View style={styles.modalContent}>
-        <Text style={styles.summaryTitle}>{activity.activityName}</Text>
-        <View style={styles.summaryDateTimeContainer}>
-          <Text style={styles.summaryLabel}>Fecha y Hora</Text>
-          <Text style={styles.summaryDateTime}>
-            {new Date(activity.activityDate).toLocaleDateString()} -{" "}
-            {new Date(activity.activityTime).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </Text>
-        </View>
-        <ScrollView
-          style={styles.summaryScrollView}
-          showsVerticalScrollIndicator={false}
-        >
-          {activity.notes && activity.notes.length > 0 && (
-            <View style={styles.summarySection}>
-              <Text style={styles.summaryLabel}>Notas</Text>
-              {activity.notes.map((note) => (
-                <View key={note.id} style={styles.summaryNoteContainer}>
-                  <Text style={styles.summaryNoteText}>{note.content}</Text>
-                </View>
-              ))}
+    <View style={styles.modalContent}>
+      <Text style={styles.summaryTitle}>{activity.activityName}</Text>
+      <Text style={styles.summaryDateTime}>
+        Fecha: {new Date(activity.activityDate).toLocaleDateString("es-MX")}
+      </Text>
+      <Text style={styles.summaryDateTime}>
+        Hora:{" "}
+        {new Date(activity.activityTime).toLocaleTimeString("es-MX", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </Text>
+      <Text style={styles.sectionTitle}>Notas:</Text>
+      {notes.length > 0 ? (
+        <FlatList
+          data={notes}
+          renderItem={({ item }) => (
+            <View style={styles.summaryNoteContainer}>
+              <Text style={styles.summaryNoteText}>{item.content || item}</Text>
             </View>
           )}
-        </ScrollView>
-        <TouchableOpacity style={styles.summaryCloseButton} onPress={onClose}>
-          <Text style={styles.buttonText}>Cerrar</Text>
-        </TouchableOpacity>
-      </View>
+          keyExtractor={(item, index) => index.toString()}
+        />
+      ) : (
+        <Text style={styles.summaryNoteText}>
+          No hay notas disponibles.
+        </Text>
+      )}
+      <TouchableOpacity style={styles.summaryCloseButton} onPress={onClose}>
+        <Text style={styles.buttonText}>Cerrar</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -60,14 +62,13 @@ const ActivitySummary = ({ activity, onClose }) => {
 const ActivityCard = memo(
   ({ activity, onEdit, onDelete, onViewSummary, index }) => {
     const listItems = Array.isArray(activity.notes)
-      ? activity.notes.filter((note) => note.content.trim() !== "")
+      ? activity.notes.filter((note) => note.content && note.content.trim() !== "")
       : [];
     return (
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{activity.activityName}</Text>
         <Text style={styles.cardText}>
-          Fecha:{" "}
-          {new Date(activity.activityDate).toLocaleDateString("es-MX")}
+          Fecha: {new Date(activity.activityDate).toLocaleDateString("es-MX")}
         </Text>
         <Text style={styles.cardText}>
           Hora:{" "}
@@ -104,7 +105,7 @@ const ActivityCard = memo(
   }
 );
 
-const HomeScreen = () => {
+const HomeScreen = ({ userRole }) => {
   const { activities, setActivities } = useContext(ActivitiesContext);
   const { deleteItem } = useDataContext();
   const [modalVisible, setModalVisible] = useState(false);
@@ -112,13 +113,10 @@ const HomeScreen = () => {
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [editIndex, setEditIndex] = useState(null);
 
-  const handleEdit = useCallback(
-    (index) => {
-      setEditIndex(index);
-      setModalVisible(true);
-    },
-    []
-  );
+  const handleEdit = useCallback((index) => {
+    setEditIndex(index);
+    setModalVisible(true);
+  }, []);
 
   const handleDelete = useCallback(
     (index) => {
@@ -175,9 +173,8 @@ const HomeScreen = () => {
         activityName: activityData.activityName,
         activityDate: activityData.activityDate,
         activityTime: activityData.activityTime,
-        notes: activityData.notes || "",
+        notes: Array.isArray(activityData.notes) ? activityData.notes : [],
       };
-      console.log("Submitting activity:", newActivity); // Debug log
       if (editIndex !== null) {
         setActivities((prev) =>
           prev.map((act, idx) => (idx === editIndex ? newActivity : act))
@@ -196,7 +193,7 @@ const HomeScreen = () => {
       <ScrollView style={styles.activitiesContainer}>
         {activities.map((activity, index) => (
           <ActivityCard
-            key={`activity-${activity.id}`} // Changed to use activity.id for uniqueness
+            key={`activity-${activity.id}`}
             activity={activity}
             index={index}
             onEdit={handleEdit}
@@ -216,13 +213,15 @@ const HomeScreen = () => {
         visible={modalVisible}
         onRequestClose={handleModalClose}
       >
-        <ActivityForm
-          setModalVisible={setModalVisible}
-          editIndex={editIndex}
-          setEditIndex={setEditIndex}
-          onSubmit={handleFormSubmit} // Pass the submit handler
-          initialData={editIndex !== null ? activities[editIndex] : undefined}
-        />
+        <View style={styles.modalContainer}>
+          <ActivityForm
+            setModalVisible={setModalVisible}
+            editIndex={editIndex}
+            setEditIndex={setEditIndex}
+            onSubmit={handleFormSubmit}
+            initialData={editIndex !== null ? activities[editIndex] : undefined}
+          />
+        </View>
       </Modal>
       <Modal
         animationType="slide"
@@ -230,12 +229,14 @@ const HomeScreen = () => {
         visible={summaryModalVisible}
         onRequestClose={() => setSummaryModalVisible(false)}
       >
-        {selectedActivity && (
-          <ActivitySummary
-            activity={selectedActivity}
-            onClose={() => setSummaryModalVisible(false)}
-          />
-        )}
+        <View style={styles.modalContainer}>
+          {selectedActivity && (
+            <ActivitySummary
+              activity={selectedActivity}
+              onClose={() => setSummaryModalVisible(false)}
+            />
+          )}
+        </View>
       </Modal>
     </View>
   );

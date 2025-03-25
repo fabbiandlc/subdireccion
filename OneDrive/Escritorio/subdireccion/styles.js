@@ -25,6 +25,7 @@ const BORDER_RADIUS = {
 };
 
 export const styles = StyleSheet.create({
+  // Estilos usados en HomeScreen
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -84,154 +85,76 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     marginLeft: SPACING.sm,
   },
-  buttonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: "600",
+  addButtonContainer: {
+    position: "absolute",
+    bottom: SPACING.lg,
+    right: SPACING.lg,
+  },
+  addButton: {
+    backgroundColor: COLORS.primary,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
   },
 
+  // Estilos para ActivityForm
   modalContainer: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
     justifyContent: "center",
     alignItems: "center",
   },
   modalContent: {
-    width: "80%",
+    width: 360, // Tamaño fijo en lugar de porcentaje
+    height: 600, // Altura fija para un buen tamaño
     backgroundColor: COLORS.white,
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.md,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  summaryTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: COLORS.text,
-    marginBottom: SPACING.sm,
-  },
-  summaryLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.text,
-    marginBottom: SPACING.sm,
-  },
-  summaryDateTimeContainer: {
-    marginBottom: SPACING.md,
-  },
-  summaryDateTime: {
-    fontSize: 14,
-    color: COLORS.gray,
-  },
-  summaryScrollView: {
-    maxHeight: 300,
-    marginBottom: SPACING.md,
-  },
-  summarySection: {
-    marginBottom: SPACING.md,
-  },
-  summaryNoteContainer: {
-    padding: SPACING.sm,
-    borderRadius: BORDER_RADIUS.sm,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: SPACING.sm,
-  },
-  summaryNoteText: {
-    fontSize: 14,
-    color: COLORS.text,
-  },
-  summaryChecklistItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: SPACING.sm,
-    borderRadius: BORDER_RADIUS.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: SPACING.sm,
-  },
-  summaryChecklistText: {
-    fontSize: 14,
-    color: COLORS.text,
-    marginLeft: SPACING.sm,
-  },
-  checkboxIndicator: {
-    fontSize: 16,
-    color: COLORS.gray,
-  },
-  completedText: {
-    textDecorationLine: "line-through",
-    color: COLORS.gray,
-  },
-  summaryCloseButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: BORDER_RADIUS.sm,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  noteContainer: {
-    padding: SPACING.sm,
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: SPACING.md,
-  },
-  noteText: {
-    fontSize: 14,
-    color: COLORS.text,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: "85%",
-    backgroundColor: COLORS.white,
-    padding: SPACING.lg,
+    padding: SPACING.xl,
     borderRadius: BORDER_RADIUS.md,
     shadowColor: "#000",
     shadowOpacity: 0.2,
     shadowRadius: 5,
     elevation: 5,
   },
+  scrollContent: {
+    paddingBottom: SPACING.xl,
+    flexGrow: 1, // Permite que el contenido crezca dentro del tamaño fijo
+  },
   input: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.white, // Corregido de COLORS.md a COLORS.white
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.sm,
     padding: SPACING.md,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
+    fontSize: 16,
+    color: COLORS.text,
+  },
+  inputText: {
     fontSize: 16,
     color: COLORS.text,
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: SPACING.md,
+    marginTop: SPACING.lg,
   },
   saveButton: {
     flex: 1,
     backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.md, // Aumentado para botones más altos
     borderRadius: BORDER_RADIUS.sm,
     alignItems: "center",
-    marginRight: SPACING.sm,
+    marginLeft: SPACING.md,
   },
   cancelButton: {
     flex: 1,
     backgroundColor: COLORS.danger,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.md, // Aumentado para simetría con saveButton
     borderRadius: BORDER_RADIUS.sm,
     alignItems: "center",
-    marginLeft: SPACING.sm,
+    marginRight: SPACING.md,
   },
   buttonText: {
     color: COLORS.white,
@@ -246,172 +169,53 @@ export const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.text,
     marginBottom: SPACING.md,
-  },
-  addButtonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: SPACING.md,
-  },
-  addButton: {
-    flex: 1,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.sm,
-    alignItems: "center",
-    marginHorizontal: SPACING.sm,
-  },
-  textButton: {
-    backgroundColor: COLORS.primary,
-  },
-  checklistButton: {
-    backgroundColor: COLORS.success,
-  },
-  addButtonText: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: "600",
+    textAlign: "center", // Centrado para simetría
   },
   noteContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.white, // Simplificado, sin flexDirection ya que solo tiene un input
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.sm,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
   },
   noteInput: {
     flex: 1,
-    fontSize: 14,
-    color: COLORS.text,
-    paddingHorizontal: SPACING.sm,
-  },
-  removeButton: {
-    marginLeft: SPACING.sm,
-    backgroundColor: COLORS.danger,
-    borderRadius: BORDER_RADIUS.sm,
-    padding: SPACING.sm,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  removeButtonText: {
-    color: COLORS.white,
     fontSize: 16,
-    fontWeight: "bold",
-  },
-  checklistContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.sm,
-    marginBottom: SPACING.md,
-  },
-  checklistInput: {
-    flex: 1,
-    fontSize: 14,
     color: COLORS.text,
-    paddingHorizontal: SPACING.sm,
-  },
-  checklistToggle: {
-    marginLeft: SPACING.sm,
-  },
-  checkboxText: {
-    fontSize: 16,
-    color: COLORS.gray,
-  },
-  completed: {
-    textDecorationLine: "line-through",
-    color: COLORS.success,
-  },
-  addButton: {
-    backgroundColor: COLORS.primary,
-    width: 70, // Ajusta el tamaño del botón circular
-    height: 70, // Ajusta el tamaño del botón circular
-    borderRadius: 35, // Asegura que el botón sea circular (la mitad de width/height)
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10, // Asegura que esté por encima de otros elementos
+    padding: SPACING.md, // Padding uniforme
+    minHeight: 80, // Aumentado para más espacio en notas
   },
 
-  addButtonContainer: {
-    position: "absolute", // Hace que el contenedor sea fijo
-    bottom: SPACING.lg, // Coloca el botón hacia la parte inferior
-    right: SPACING.lg, // Lo alinea a la derecha
-    zIndex: 10, // Asegura que esté por encima de otros elementos
-  },
-
-  addButtonText: {
-    color: COLORS.white,
-    fontSize: 15, // Aumenta el tamaño del texto
-    fontWeight: "bold", // Puedes ajustar el peso si lo deseas
-  },
-  activitiesContainer: {
-    marginTop: 20,
-    paddingHorizontal: 16,
-  },
-  activitiesTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-  },
-  activitiesList: {
-    maxHeight: 300, // Altura máxima para el ScrollView
-  },
-  activityItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-    backgroundColor: "#FFFFFF", // Fondo blanco para cada actividad
-    borderRadius: 8, // Bordes redondeados
-    borderWidth: 1,
-    borderColor: "#E0E0E0", // Borde ligero
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2, // Sombra para Android
-  },
-  activityName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333", // Texto oscuro para el nombre de la actividad
-    flex: 1, // Ocupa el espacio disponible
-  },
-  activityTime: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#007BFF", // Color azul para la hora
-    marginLeft: 16,
-  },
-  noteContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 5,
-  },
-  noteInput: {
-    flex: 1,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 5,
-  },
-  checkboxText: {
+  // Estilos para ActivitySummary
+  summaryTitle: {
     fontSize: 20,
-    marginHorizontal: 10,
+    fontWeight: "bold",
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
   },
-  completed: {
-    color: "green",
+  summaryDateTime: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginBottom: SPACING.sm,
   },
-  removeButtonText: {
-    fontSize: 24,
-    color: "red",
-    marginLeft: 10,
-  }
+  summaryNoteContainer: {
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: SPACING.sm,
+  },
+  summaryNoteText: {
+    fontSize: 14,
+    color: COLORS.text,
+  },
+  summaryCloseButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

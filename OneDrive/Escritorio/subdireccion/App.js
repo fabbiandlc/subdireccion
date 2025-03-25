@@ -20,7 +20,6 @@ import LoginScreen from "./LoginScreen";
 import BackupScreen from "./BackupScreen";
 import { ActivitiesProvider } from "./ActivitiesContext";
 import { DataProvider } from "./DataContext";
-import "react-native-get-random-values";
 
 const { width } = Dimensions.get("window");
 
@@ -28,6 +27,7 @@ export default function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [currentScreen, setCurrentScreen] = useState("Login");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const translateX = useRef(new Animated.Value(-width * 0.8)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -36,10 +36,12 @@ export default function App() {
     const checkLoginStatus = async () => {
       try {
         const token = await AsyncStorage.getItem("userToken");
-        if (token) {
+        const role = await AsyncStorage.getItem("userRole");
+        if (token && role) {
           setIsLoggedIn(true);
+          setUserRole(role);
           setCurrentScreen("Actividades");
-          closeDrawer(); // Cierra el drawer completamente al cargar con token
+          closeDrawer();
         }
       } catch (error) {
         console.error("Error checking token:", error);
@@ -61,7 +63,6 @@ export default function App() {
         return false;
       }
     );
-
     return () => backHandler.remove();
   }, [isDrawerOpen]);
 
@@ -93,9 +94,7 @@ export default function App() {
         duration: 300,
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      setIsDrawerOpen(false);
-    });
+    ]).start(() => setIsDrawerOpen(false));
   };
 
   const navigateToScreen = (screenName) => {
@@ -103,23 +102,25 @@ export default function App() {
     closeDrawer();
   };
 
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = (role) => {
     setIsLoggedIn(true);
+    setUserRole(role);
+    AsyncStorage.setItem("userRole", role);
     setCurrentScreen("Actividades");
-    closeDrawer(); // Cierra el drawer completamente al iniciar sesión
+    closeDrawer();
   };
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem("userToken");
+    await AsyncStorage.removeItem("userRole");
     setIsLoggedIn(false);
+    setUserRole(null);
     setCurrentScreen("Login");
     closeDrawer();
   };
 
   const renderMainContent = () => {
-    const navigation = {
-      goBack: () => setCurrentScreen("Actividades"),
-    };
+    const navigation = { goBack: () => setCurrentScreen("Actividades") };
 
     if (isLoading) {
       return (
@@ -142,14 +143,16 @@ export default function App() {
           <Text style={styles.headerTitle}>{currentScreen}</Text>
           <View style={{ width: 24 }} />
         </View>
-        {currentScreen === "Actividades" && <HomeScreen />}
+        {currentScreen === "Actividades" && <HomeScreen userRole={userRole} />}
         {currentScreen === "Calendario" && <Calendario />}
         {currentScreen === "Gestión" && (
-          <AdministracionScreen navigation={navigation} />
+          <AdministracionScreen navigation={navigation} userRole={userRole} />
         )}
-        {currentScreen === "Horarios" && <HorariosScreen />}
+        {currentScreen === "Horarios" && (
+          <HorariosScreen userRole={userRole} />
+        )}
         {currentScreen === "Respaldo" && (
-          <BackupScreen navigation={navigation} />
+          <BackupScreen navigation={navigation} userRole={userRole} />
         )}
       </SafeAreaView>
     );
@@ -158,9 +161,13 @@ export default function App() {
   const drawerItems = [
     { name: "Actividades", icon: "home-outline" },
     { name: "Calendario", icon: "calendar-outline" },
-    { name: "Gestión", icon: "pencil-outline" },
-    { name: "Horarios", icon: "time-outline" },
-    { name: "Respaldo", icon: "save-outline" },
+    { name: "Horarios", icon: "time-outline" }, // Moved Horarios outside admin condition
+    ...(userRole === "admin"
+      ? [
+          { name: "Gestión", icon: "pencil-outline" },
+          { name: "Respaldo", icon: "save-outline" },
+        ]
+      : []),
     { name: "Cerrar Sesión", icon: "log-out-outline", action: handleLogout },
   ];
 
@@ -200,9 +207,7 @@ export default function App() {
                       key={index}
                       style={styles.drawerItem}
                       onPress={() =>
-                        item.action
-                          ? item.action()
-                          : navigateToScreen(item.name)
+                        item.action ? item.action() : navigateToScreen(item.name)
                       }
                     >
                       <Ionicons name={item.icon} size={24} color="#007BFF" />
@@ -221,6 +226,7 @@ export default function App() {
   );
 }
 
+// Styles remain unchanged
 const styles = StyleSheet.create({
   mainContent: {
     flex: 1,

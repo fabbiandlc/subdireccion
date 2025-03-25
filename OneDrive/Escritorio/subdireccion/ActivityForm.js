@@ -12,14 +12,22 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { ActivitiesContext } from "./ActivitiesContext";
 import { styles } from "./styles";
 
-function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
-  const { activities, setActivities } = useContext(ActivitiesContext);
-  const [activityName, setActivityName] = useState("");
-  const [activityDate, setActivityDate] = useState(new Date());
-  const [activityTime, setActivityTime] = useState(new Date());
+const ActivityForm = ({ setModalVisible, editIndex, setEditIndex, onSubmit, initialData }) => {
+  const { activities } = useContext(ActivitiesContext);
+  const [activityName, setActivityName] = useState(initialData?.activityName || "");
+  const [activityDate, setActivityDate] = useState(
+    initialData ? new Date(initialData.activityDate) : new Date()
+  );
+  const [activityTime, setActivityTime] = useState(
+    initialData ? new Date(initialData.activityTime) : new Date()
+  );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [notes, setNotes] = useState([]);
+  const [notes, setNotes] = useState(
+    Array.isArray(initialData?.notes) && initialData.notes.length > 0 
+      ? initialData.notes 
+      : [{ id: Date.now(), content: "" }]
+  );
   const scrollViewRef = useRef(null);
 
   useEffect(() => {
@@ -28,9 +36,7 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
       setActivityName(activity.activityName || "");
       setActivityDate(new Date(activity.activityDate));
       setActivityTime(new Date(activity.activityTime));
-      setNotes(activity.notes || []);
-    } else if (notes.length === 0) {
-      setNotes([{ id: Date.now(), content: "" }]);
+      setNotes(Array.isArray(activity.notes) && activity.notes.length > 0 ? activity.notes : [{ id: Date.now(), content: "" }]);
     }
   }, [editIndex, activities]);
 
@@ -39,10 +45,7 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
       const currentIndex = prevNotes.findIndex((note) => note.id === id);
       if (currentIndex !== -1) {
         const updatedNotes = [...prevNotes];
-        updatedNotes.splice(currentIndex + 1, 0, {
-          id: Date.now(),
-          content: "",
-        });
+        updatedNotes.splice(currentIndex + 1, 0, { id: Date.now(), content: "" });
         return updatedNotes;
       }
       return prevNotes;
@@ -61,7 +64,7 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
       if (scrollViewRef.current) {
         scrollViewRef.current.scrollToEnd({ animated: true });
       }
-    }, 0);
+    }, 100);
   };
 
   const handleSave = () => {
@@ -70,29 +73,16 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
       return;
     }
 
-    const filteredNotes = notes.filter((note) => note.content.trim() !== "");
+    const filteredNotes = notes.filter((note) => note.content && note.content.trim() !== "");
 
-    const newActivity = {
-      id: editIndex !== null ? activities[editIndex].id : Date.now(),
+    const activityData = {
       activityName: activityName.trim(),
       activityDate: activityDate.toISOString(),
       activityTime: activityTime.toISOString(),
       notes: filteredNotes,
-      createdAt:
-        editIndex !== null
-          ? activities[editIndex].createdAt
-          : new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
 
-    if (editIndex !== null) {
-      const updatedActivities = [...activities];
-      updatedActivities[editIndex] = newActivity;
-      setActivities(updatedActivities);
-    } else {
-      setActivities([...activities, newActivity]);
-    }
-
+    onSubmit(activityData);
     setModalVisible(false);
     setEditIndex(null);
   };
@@ -102,7 +92,7 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
       <TextInput
         style={styles.noteInput}
         multiline
-        placeholder="Agregar nota..."
+        placeholder="Nota"
         value={note.content}
         onChangeText={(content) => updateNote(note.id, content)}
         onSubmitEditing={() => handleNoteSubmit(note.id)}
@@ -114,13 +104,13 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.modalContainer}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
       <View style={styles.modalContent}>
         <ScrollView
           ref={scrollViewRef}
-          contentContainerStyle={{ flexGrow: 1 }}
-          style={{ maxHeight: 400 }}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
         >
           <TextInput
             style={styles.input}
@@ -132,15 +122,15 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
             onPress={() => setShowDatePicker(true)}
             style={styles.input}
           >
-            <Text>{activityDate.toLocaleDateString()}</Text>
+            <Text style={styles.inputText}>{activityDate.toLocaleDateString("es-MX")}</Text>
           </TouchableOpacity>
           {showDatePicker && (
             <DateTimePicker
               value={activityDate}
               mode="date"
-              display="default"
+              display={Platform.OS === "ios" ? "inline" : "default"}
               onChange={(event, selectedDate) => {
-                setShowDatePicker(false);
+                setShowDatePicker(Platform.OS === "ios"); // Mantiene el picker visible en iOS hasta cerrar manualmente
                 if (selectedDate) setActivityDate(selectedDate);
               }}
             />
@@ -149,33 +139,27 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
             onPress={() => setShowTimePicker(true)}
             style={styles.input}
           >
-            <Text>
-              {activityTime.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+            <Text style={styles.inputText}>
+              {activityTime.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
             </Text>
           </TouchableOpacity>
           {showTimePicker && (
             <DateTimePicker
               value={activityTime}
               mode="time"
-              display="default"
+              display={Platform.OS === "ios" ? "inline" : "default"}
               onChange={(event, selectedTime) => {
-                setShowTimePicker(false);
+                setShowTimePicker(Platform.OS === "ios"); // Mantiene el picker visible en iOS hasta cerrar manualmente
                 if (selectedTime) setActivityTime(selectedTime);
               }}
             />
           )}
           <View style={styles.notesSection}>
             <Text style={styles.sectionTitle}>Notas</Text>
-            {notes.map((note) => renderNoteItem(note))}
+            {notes.map(renderNoteItem)}
           </View>
         </ScrollView>
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.buttonText}>Guardar</Text>
-          </TouchableOpacity>
           <TouchableOpacity
             style={styles.cancelButton}
             onPress={() => {
@@ -185,10 +169,13 @@ function ActivityForm({ setModalVisible, editIndex, setEditIndex }) {
           >
             <Text style={styles.buttonText}>Cancelar</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.buttonText}>Guardar</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </KeyboardAvoidingView>
   );
-}
+};
 
 export default ActivityForm;

@@ -18,7 +18,7 @@ import { fetchAll, update } from "./Database";
 import { v4 as uuidv4 } from "uuid";
 import { stylesHorarios as styles } from "./stylesHorarios";
 
-const HorariosScreen = ({ navigation }) => {
+const HorariosScreen = ({ userRole }) => {
   const {
     docentes,
     setDocentes,
@@ -33,10 +33,10 @@ const HorariosScreen = ({ navigation }) => {
   const [filteredGrupos, setFilteredGrupos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [docenteModalVisible, setDocenteModalVisible] = useState(false);
-  const [selectedEntity, setSelectedEntity] = useState(null); // Puede ser docente o grupo
+  const [selectedEntity, setSelectedEntity] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentView, setCurrentView] = useState("list"); // "list" o "schedule"
-  const [currentTab, setCurrentTab] = useState("docentes"); // "docentes" o "grupos"
+  const [currentView, setCurrentView] = useState("list");
+  const [currentTab, setCurrentTab] = useState("docentes");
   const [editingHorario, setEditingHorario] = useState(null);
 
   const [newDocente, setNewDocente] = useState({
@@ -73,7 +73,7 @@ const HorariosScreen = ({ navigation }) => {
       { horaInicio: "07:00", horaFin: "07:50", esReceso: false },
       { horaInicio: "07:50", horaFin: "08:40", esReceso: false },
       { horaInicio: "08:40", horaFin: "09:30", esReceso: false },
-      { horaInicio: "09:30", horaFin: "10:00", esReceso: true }, // Receso ajustado
+      { horaInicio: "09:30", horaFin: "10:00", esReceso: true },
       { horaInicio: "10:00", horaFin: "10:50", esReceso: false },
       { horaInicio: "10:50", horaFin: "11:40", esReceso: false },
       { horaInicio: "11:40", horaFin: "12:30", esReceso: false },
@@ -239,7 +239,10 @@ const HorariosScreen = ({ navigation }) => {
         (m) => m.id === newHorario.materiaId
       );
       if (materiaSeleccionada && !materiaSeleccionada.color) {
-        const updatedMateria = { ...materiaSeleccionada, color: newHorario.color };
+        const updatedMateria = {
+          ...materiaSeleccionada,
+          color: newHorario.color,
+        };
         await update("Materias", updatedMateria, updatedMateria.id);
         const freshMaterias = await fetchAll("Materias");
         setMaterias(freshMaterias);
@@ -410,7 +413,8 @@ const HorariosScreen = ({ navigation }) => {
             backgroundColor: clase.color || getMateriaColor(clase.materiaId),
           },
         ]}
-        onPress={() => handleEditarHorario(clase)}
+        onPress={() => userRole === "admin" && handleEditarHorario(clase)}
+        disabled={userRole !== "admin"}
       >
         {esInicio && (
           <>
@@ -669,10 +673,7 @@ const HorariosScreen = ({ navigation }) => {
     <>
       <View style={styles.tabContainer}>
         <TouchableOpacity
-          style={[
-            styles.tab,
-            currentTab === "docentes" && styles.activeTab,
-          ]}
+          style={[styles.tab, currentTab === "docentes" && styles.activeTab]}
           onPress={() => {
             setCurrentTab("docentes");
             setSearchQuery("");
@@ -695,10 +696,7 @@ const HorariosScreen = ({ navigation }) => {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[
-            styles.tab,
-            currentTab === "grupos" && styles.activeTab,
-          ]}
+          style={[styles.tab, currentTab === "grupos" && styles.activeTab]}
           onPress={() => {
             setCurrentTab("grupos");
             setSearchQuery("");
@@ -730,7 +728,9 @@ const HorariosScreen = ({ navigation }) => {
         />
         <TextInput
           style={styles.searchInput}
-          placeholder={`Buscar ${currentTab === "docentes" ? "docente" : "grupo"}...`}
+          placeholder={`Buscar ${
+            currentTab === "docentes" ? "docente" : "grupo"
+          }...`}
           value={searchQuery}
           onChangeText={setSearchQuery}
           clearButtonMode="while-editing"
@@ -738,13 +738,17 @@ const HorariosScreen = ({ navigation }) => {
       </View>
       <FlatList
         data={currentTab === "docentes" ? filteredDocentes : filteredGrupos}
-        renderItem={currentTab === "docentes" ? renderDocenteItem : renderGrupoItem}
+        renderItem={
+          currentTab === "docentes" ? renderDocenteItem : renderGrupoItem
+        }
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons
-              name={currentTab === "docentes" ? "person-outline" : "people-outline"}
+              name={
+                currentTab === "docentes" ? "person-outline" : "people-outline"
+              }
               size={64}
               color="#ccc"
             />
@@ -790,21 +794,27 @@ const HorariosScreen = ({ navigation }) => {
             <Ionicons name="arrow-back" size={24} color="#007BFF" />
           </TouchableOpacity>
           <Text style={styles.scheduleTitle}>
-            Horario: {currentTab === "docentes" ? `${selectedEntity.nombre} ${selectedEntity.apellido}` : selectedEntity.nombre}
+            Horario:{" "}
+            {currentTab === "docentes"
+              ? `${selectedEntity.nombre} ${selectedEntity.apellido}`
+              : selectedEntity.nombre}
           </Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => {
-              setNewHorario({
-                ...newHorario,
-                [currentTab === "docentes" ? "docenteId" : "salonId"]: selectedEntity.id,
-              });
-              setEditingHorario(null);
-              setModalVisible(true);
-            }}
-          >
-            <Ionicons name="add" size={24} color="#007BFF" />
-          </TouchableOpacity>
+          {userRole === "admin" && (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => {
+                setNewHorario({
+                  ...newHorario,
+                  [currentTab === "docentes" ? "docenteId" : "salonId"]:
+                    selectedEntity.id,
+                });
+                setEditingHorario(null);
+                setModalVisible(true);
+              }}
+            >
+              <Ionicons name="add" size={24} color="#007BFF" />
+            </TouchableOpacity>
+          )}
         </View>
         <ScrollView style={styles.scheduleScrollContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -865,28 +875,30 @@ const HorariosScreen = ({ navigation }) => {
                       {horario.dia}, {horario.horaInicio} - {horario.horaFin}
                     </Text>
                   </View>
-                  <View style={styles.legendActions}>
-                    <TouchableOpacity
-                      style={styles.legendButton}
-                      onPress={() => handleEditarHorario(horario)}
-                    >
-                      <Ionicons
-                        name="create-outline"
-                        size={20}
-                        color="#007BFF"
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.legendButton}
-                      onPress={() => handleEliminarHorario(horario.id)}
-                    >
-                      <Ionicons
-                        name="trash-outline"
-                        size={20}
-                        color="#FF3B30"
-                      />
-                    </TouchableOpacity>
-                  </View>
+                  {userRole === "admin" && (
+                    <View style={styles.legendActions}>
+                      <TouchableOpacity
+                        style={styles.legendButton}
+                        onPress={() => handleEditarHorario(horario)}
+                      >
+                        <Ionicons
+                          name="create-outline"
+                          size={20}
+                          color="#007BFF"
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.legendButton}
+                        onPress={() => handleEliminarHorario(horario.id)}
+                      >
+                        <Ionicons
+                          name="trash-outline"
+                          size={20}
+                          color="#FF3B30"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
               ))}
             </View>
@@ -899,27 +911,29 @@ const HorariosScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       {currentView === "list" ? renderListView() : renderScheduleView()}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={docenteModalVisible}
-        onRequestClose={() => {
-          setDocenteModalVisible(false);
-        }}
-      >
-        {renderDocenteForm()}
-      </Modal>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(false);
-          setEditingHorario(null);
-        }}
-      >
-        {renderHorarioForm()}
-      </Modal>
+      {userRole === "admin" && (
+        <>
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={docenteModalVisible}
+            onRequestClose={() => setDocenteModalVisible(false)}
+          >
+            {renderDocenteForm()}
+          </Modal>
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={modalVisible}
+            onRequestClose={() => {
+              setModalVisible(false);
+              setEditingHorario(null);
+            }}
+          >
+            {renderHorarioForm()}
+          </Modal>
+        </>
+      )}
     </SafeAreaView>
   );
 };
